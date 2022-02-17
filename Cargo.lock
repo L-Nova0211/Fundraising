@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "WFD"
+name = "Vesting"
 version = "0.0.1"
 dependencies = [
  "cosmwasm-bignumber",

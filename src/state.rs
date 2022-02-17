@@ -7,7 +7,8 @@ use cw_storage_plus::{Item, Map, U128Key};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub owner: Addr,
-    pub wfdToken: Addr,
+    pub tokenAddr: Addr,
+    pub tokenDecimal: Uint128,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
@@ -15,13 +16,13 @@ pub const CONFIG: Item<Config> = Item::new("config");
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct UserInfo{
 	pub walletAddress: Addr, //investor wallet address
-	pub totalAmount:Uint128, //WFD token total amount that the investor buys.
-	pub lockedAmount, //locked WFD token amount of totalAmount.
-	pub releasedAmount, //released WFD token amount of totalAmount
-	pub pendingAmount, //token amount that investor can claim 
+	pub totalAmount: Uint128, //WFD token total amount that the investor buys.
+	pub lockedAmount: Uint128, //locked WFD token amount of totalAmount.
+	pub releasedAmount: Uint128, //released WFD token amount of totalAmount
+	pub pendingAmount: Uint128, //token amount that investor can claim 
 }
 
 //------------community array------------------------------------------------
-pub const SeedUsers: Item<Vec<UserInfo>> = Item::new("seedusers");
-pub const PresaleUsers: Item<Vec<UserInfo>> = Item:new("presaleusers");
-pub const IDOUsers: Item<Vec<UserInfo>> = Item::new("idousers");
+pub const SEED_USERS: Item<Vec<UserInfo>> = Item::new("seedusers");
+pub const PRESALE_USERS: Item<Vec<UserInfo>> = Item::new("presaleusers");
+pub const IDO_USERS: Item<Vec<UserInfo>> = Item::new("idousers");

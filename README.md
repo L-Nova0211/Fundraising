@@ -1,4 +1,4 @@
-# WEFund smart contract
+# Vesting for LaunchPad smart contract
 
 Terra invest plastform
-v 13.0
+v 1.0

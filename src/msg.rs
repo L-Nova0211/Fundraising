@@ -6,31 +6,31 @@ use crate::state::{UserInfo};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub admin: Option<String>,
-    pub wfdToken: Option<String>,
+    pub token_addr: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    SetConfig { admin:Option<String>, wfd_token:Option<String> },
+    SetConfig { admin:Option<String>, token_addr:Option<String> },
     SetSeedUsers {
-        seed_users: Vec<UserInfo>
+        user_infos: Vec<UserInfo>
     },
-    AddSeedUsers { 
+    AddSeedUser { 
         user_info: UserInfo
     },
     SetPresaleUsers {
-        presale_users: Vec<UserInfo>
+        user_infos: Vec<UserInfo>
     },
     AddPresaleUser {
         user_info: UserInfo
     },
     SetIDOUsers {
-        ido_users: Vec<UserInfo>
+        user_infos: Vec<UserInfo>
     },
     AddIDOUser {
         user_info: UserInfo
-    }
+    },
     ClaimPendingTokens{
         wallet: String
     }
