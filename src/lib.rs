@@ -6,7 +6,7 @@ pub mod state;
 pub use crate::error::ContractError;
 
 #[cfg(test)]
-mod testing;
+mod test;
 
-#[cfg(test)]
-mod mock_querier;
+// #[cfg(test)]
+// mod mock_querier;
