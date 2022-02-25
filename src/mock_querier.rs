@@ -9,6 +9,7 @@ use cosmwasm_std::{
 use cw20::{BalanceResponse as Cw20BalanceResponse, Cw20QueryMsg};
 
 use std::collections::HashMap;
+use std::marker::PhantomData;
 
 use terra_cosmwasm::{TaxCapResponse, TaxRateResponse, TerraQuery, TerraQueryWrapper, TerraRoute};
 use terraswap::asset::{AssetInfo, PairInfo};
@@ -25,6 +26,7 @@ pub fn mock_dependencies(
         api: MockApi::default(),
         storage: MockStorage::default(),
         querier: custom_querier,
+        custom_query_type: PhantomData
     }
 }
 

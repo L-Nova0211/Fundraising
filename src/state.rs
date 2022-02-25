@@ -1,29 +1,31 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
+use std::collections::HashMap;
 use cosmwasm_std::{Addr, Uint128, Coin, StdResult, DepsMut};
-use cw_storage_plus::{Item, Map, U128Key};
+use cw_storage_plus::{Item, Map};
+
 //------------Config---------------------------------------
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub owner: Addr,
+	pub project_id: Uint128,
     pub token_addr: Addr,
 	pub token_name: String,
     pub token_decimal: Uint128,
 	pub start_time: Uint128,
+	pub is_started: bool,
 }
 
-pub const CONFIG: Item<Config> = Item::new("config");
 
 //------------Vesting parameter---------------------------------------
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct VestingParameter{
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Copy)]
+pub struct VestingParameter{																																																																																																																																																																																																																																																																																																			
 	pub soon: Uint128,
 	pub after: Uint128,
 	pub period: Uint128
 }
 
-pub const VEST_PARAM: Map<String, VestingParameter> = Map::new("vestingparameter");
+// pub const VEST_PARAM: Map<String, VestingParameter> = Map::new("vestingparameter");
 
 //-------------Token holder-------------------------------------------
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -34,6 +36,33 @@ pub struct UserInfo{
 	pub pending_amount: Uint128, //token amount that investor can claim 
 }
 
-pub const SEED_USERS: Item<Vec<UserInfo>> = Item::new("seedusers");
-pub const PRESALE_USERS: Item<Vec<UserInfo>> = Item::new("presaleusers");
-pub const IDO_USERS: Item<Vec<UserInfo>> = Item::new("idousers");
+// pub const SEED_USERS: Item<Vec<UserInfo>> = Item::new("seedusers");
+// pub const PRESALE_USERS: Item<Vec<UserInfo>> = Item::new("presaleusers");
+// pub const IDO_USERS: Item<Vec<UserInfo>> = Item::new("idousers");
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ProjectInfo{
+	pub project_id: u32,
+	pub config: Config,
+	pub vest_param: HashMap<String, VestingParameter>,
+	pub seed_users: Vec<UserInfo>,
+	pub presale_users: Vec<UserInfo>,
+	pub ido_users: Vec<UserInfo>,
+}
+
+pub const OWNER: Item<Addr> = Item::new("owner");
+
+pub const PROJECT_SEQ: Item<u32> = Item::new("prj_seq");
+pub const PROJECT_INFOS:Map<u32, ProjectInfo> = Map::new("project_infos");
+
+pub fn save_projectinfo(deps: DepsMut, _prj: &mut ProjectInfo) 
+    -> StdResult<()> 
+{
+    // increment id if exists, or return 1
+    let id = PROJECT_SEQ.load(deps.storage)?;
+    let id = id + 1;
+    PROJECT_SEQ.save(deps.storage, &id)?;
+
+    _prj.project_id = id;
+    PROJECT_INFOS.save(deps.storage, id, &_prj)
+}

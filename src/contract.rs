@@ -6,13 +6,11 @@ use cosmwasm_std::{
     Coin, AllBalanceResponse, BlockInfo, Storage
 };
 use cw2::set_contract_version;
-use cw_storage_plus::{U128Key};
 use cw20::{Cw20ExecuteMsg, Cw20QueryMsg, BalanceResponse as Cw20BalanceResponse, TokenInfoResponse};
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, QueryMsg, InstantiateMsg};
-use crate::state::{Config, CONFIG, UserInfo, SEED_USERS, PRESALE_USERS, IDO_USERS, 
-    VestingParameter, VEST_PARAM};
+use crate::state::{Config, UserInfo, VestingParameter, PROJECT_SEQ, PROJECT_INFOS, OWNER };
 
 // version info for migration info
 const CONTRACT_NAME: &str = "Vesting";
@@ -27,59 +25,13 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
+    PROJECT_SEQ.save(deps.storage, &(0))?;
+
     let owner = msg
         .admin
         .and_then(|s| deps.api.addr_validate(s.as_str()).ok()) 
         .unwrap_or(info.sender.clone());
-
-    let token_addr = msg
-        .token_addr
-        .and_then(|s| deps.api.addr_validate(s.as_str()).ok()) 
-        .unwrap_or(Addr::unchecked(
-            "terra1nppndpgfusn7p8nd5d9fqy47xejg0x55jjxe2y".to_string()));//main net
-            // "terra1ajt556dpzvjwl0kl5tzku3fc3p3knkg9mkv8jl".to_string()));//test net
-
-    let start_time = msg
-        .start_time
-        .unwrap_or(Uint128::new(_env.block.time.seconds() as u128));
-
-    let token_info: TokenInfoResponse = deps.querier.query_wasm_smart(
-        token_addr.clone(),
-        &Cw20QueryMsg::TokenInfo{}
-    )?;
-
-    let config = Config {
-        owner, 
-        token_addr,
-        token_name: token_info.name,
-        token_decimal: Uint128::new(token_info.decimals as u128),
-        start_time,
-    };
-
-    CONFIG.save(deps.storage, &config)?;
-    SEED_USERS.save(deps.storage, &Vec::new())?;
-    PRESALE_USERS.save(deps.storage, &Vec::new())?;
-    IDO_USERS.save(deps.storage, &Vec::new())?;
-
-    let sec_per_month = 60 * 60 * 24 * 30;
-    let seed_param = VestingParameter {
-        soon: Uint128::new(15), //15% unlock at tge
-        after: Uint128::new(sec_per_month), //after 1 month
-        period: Uint128::new(sec_per_month * 6) //release over 6 month
-    };
-    let presale_param = VestingParameter {
-        soon: Uint128::new(20), //20% unlock at tge
-        after: Uint128::new(sec_per_month), //ater 1 month
-        period: Uint128::new(sec_per_month * 5) //release over 5 month
-    };
-    let ido_param = VestingParameter {
-        soon: Uint128::new(25), //25% unlock at tge
-        after: Uint128::new(sec_per_month), //after 1 month
-        period: Uint128::new(sec_per_month * 4) //release over 4 month
-    };
-    VEST_PARAM.save(deps.storage, "seed".to_string(), &seed_param)?;
-    VEST_PARAM.save(deps.storage, "presale".to_string(), &presale_param)?;
-    VEST_PARAM.save(deps.storage, "ido".to_string(), &ido_param)?;
+    OWNER.save(deps.storage, &owner)?;
 
     Ok(Response::new()
         .add_attribute("method", "instantiate"))
@@ -93,58 +45,57 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::SetConfig{ admin, token_addr , start_block} 
-            => try_setconfig(deps, info, admin, token_addr, start_block),
+        ExecuteMsg::SetConfig{ project_id, admin, token_addr , start_block} 
+            => try_setconfig(deps, info, project_id, admin, token_addr, start_block),
 
-        ExecuteMsg::SetVestingParameters{ params }
-            => try_setvestingparameters(deps, info, params),
+        ExecuteMsg::SetVestingParameters{ project_id, params }
+            => try_setvestingparameters(deps, info, project_id, params),
 
-        ExecuteMsg::SetSeedUsers { user_infos } 
-            =>  try_setseedusers(deps, info, user_infos),
+        ExecuteMsg::SetSeedUsers { project_id, user_infos } 
+            =>  try_setseedusers(deps, info, project_id, user_infos),
 
-        ExecuteMsg::AddSeedUser { wallet, amount } 
-            =>  try_addseeduser(deps, info, wallet, amount),
+        ExecuteMsg::AddSeedUser { project_id, wallet, amount } 
+            =>  try_addseeduser(deps, info, project_id, wallet, amount),
 
-        ExecuteMsg::SetPresaleUsers { user_infos } 
-            =>  try_setpresaleusers(deps, info, user_infos),
+        ExecuteMsg::SetPresaleUsers { project_id, user_infos } 
+            =>  try_setpresaleusers(deps, info, project_id, user_infos),
 
-        ExecuteMsg::AddPresaleUser { wallet, amount } 
-            =>  try_addpresaleuser(deps, info, wallet, amount),
+        ExecuteMsg::AddPresaleUser { project_id, wallet, amount } 
+            =>  try_addpresaleuser(deps, info, project_id, wallet, amount),
 
-        ExecuteMsg::SetIDOUsers { user_infos } 
-            =>  try_setidousers(deps, info, user_infos),
+        ExecuteMsg::SetIDOUsers { project_id, user_infos } 
+            =>  try_setidousers(deps, info, project_id, user_infos),
 
-        ExecuteMsg::AddIDOUser { wallet, amount } 
-            =>  try_addidouser(deps, info, wallet, amount),
+        ExecuteMsg::AddIDOUser { project_id, wallet, amount } 
+            =>  try_addidouser(deps, info, project_id, wallet, amount),
 
-        ExecuteMsg::ClaimPendingTokens { }
-            =>  try_claimpendingtokens(deps, _env,info)
+        ExecuteMsg::ClaimPendingTokens { project_id, }
+            =>  try_claimpendingtokens(deps, _env, info, project_id )
     }
 }
-pub fn try_setvestingparameters(deps: DepsMut, info: MessageInfo, params: Vec<VestingParameter>)
+pub fn try_setvestingparameters(deps: DepsMut, info: MessageInfo, project_id: u32, params: Vec<VestingParameter>)
     ->Result<Response, ContractError>
 {
-    //-----------check owner--------------------------
-    let config = CONFIG.load(deps.storage).unwrap();
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized{});
+    let mut x = PROJECT_INFOS.load(deps.storage, project_id)?;
+    if x.config.owner != info.sender {
+        return Err(ContractError::Unauthorized{ });
     }
 
-    VEST_PARAM.save(deps.storage, "seed".to_string(), &params[0])?;
-    VEST_PARAM.save(deps.storage, "presale".to_string(), &params[1])?;
-    VEST_PARAM.save(deps.storage, "ido".to_string(), &params[2])?;
+    x.vest_param.insert("seed".to_string(), params[0]);
+    x.vest_param.insert("presale".to_string(), params[1]);
+    x.vest_param.insert("ido".to_string(), params[2]);
 
     Ok(Response::new()
     .add_attribute("action", "Set Vesting parameters"))
 }
 
-pub fn calc_pending(store: &dyn Storage, _env: Env, user: UserInfo, stage: String)
+pub fn calc_pending(store: &dyn Storage, _env: Env, project_id: u32, user: UserInfo, stage: String)
     -> Uint128
 {
-    let param: VestingParameter = VEST_PARAM.load(store, stage).unwrap();
+    let x = PROJECT_INFOS.load(store, project_id).unwrap();
+    let param = x.vest_param.get(&stage).unwrap();
 
-    let config = CONFIG.load(store).unwrap();
-    let past_time =Uint128::new(_env.block.time.seconds() as u128) - config.start_time;
+    let past_time =Uint128::new(_env.block.time.seconds() as u128) - x.config.start_time;
 
     let mut unlocked = Uint128::zero();
     if past_time > Uint128::zero() {
@@ -161,57 +112,51 @@ pub fn calc_pending(store: &dyn Storage, _env: Env, user: UserInfo, stage: Strin
     return unlocked - user.released_amount;
 }
 
-pub fn try_claimpendingtokens(deps: DepsMut, _env: Env, info: MessageInfo)
+pub fn try_claimpendingtokens(deps: DepsMut, _env: Env, info: MessageInfo, project_id:u32 )
     ->Result<Response, ContractError>
 {
-    let mut users = SEED_USERS.load(deps.storage).unwrap();
-    let mut index =users.iter().position(|x| x.wallet_address == info.sender);
+    let mut x = PROJECT_INFOS.load(deps.storage, project_id)?;
+    let mut index = x.seed_users.iter().position(|x| x.wallet_address == info.sender);
     let mut amount = Uint128::zero();
     if index != None {
         let pending_amount = calc_pending(
-            deps.storage, _env.clone(), users[index.unwrap()].clone(), "seed".to_string()
+            deps.storage, _env.clone(), project_id, x.seed_users[index.unwrap()].clone(), "seed".to_string()
         );
-        users[index.unwrap()].released_amount += pending_amount;
+        x.seed_users[index.unwrap()].released_amount += pending_amount;
         amount += pending_amount;
-        SEED_USERS.save(deps.storage, &users)?;
     }
 
-    users = PRESALE_USERS.load(deps.storage).unwrap();
-    index =users.iter().position(|x| x.wallet_address == info.sender);
+    index = x.presale_users.iter().position(|x| x.wallet_address == info.sender);
     if index != None {
         let pending_amount = calc_pending(
-            deps.storage, _env.clone(), users[index.unwrap()].clone(), "presale".to_string()
+            deps.storage, _env.clone(), project_id, x.presale_users[index.unwrap()].clone(), "presale".to_string()
         );
-        users[index.unwrap()].released_amount += pending_amount;
+        x.presale_users[index.unwrap()].released_amount += pending_amount;
         amount += pending_amount;
-        PRESALE_USERS.save(deps.storage, &users)?;
     }
 
-    users = IDO_USERS.load(deps.storage).unwrap();
-    index =users.iter().position(|x| x.wallet_address == info.sender);
+    index = x.ido_users.iter().position(|x| x.wallet_address == info.sender);
     if index != None {
         let pending_amount = calc_pending(
-            deps.storage, _env.clone(), users[index.unwrap()].clone(), "ido".to_string()
+            deps.storage, _env.clone(), project_id, x.ido_users[index.unwrap()].clone(), "ido".to_string()
         );
-        users[index.unwrap()].released_amount += pending_amount;
+        x.ido_users[index.unwrap()].released_amount += pending_amount;
         amount += pending_amount;
-        IDO_USERS.save(deps.storage, &users)?;    
     }
     if amount == Uint128::zero() {
         return Err(ContractError::NoPendingTokens{});
     }
 
-    let config = CONFIG.load(deps.storage).unwrap();
     let token_info: TokenInfoResponse = deps.querier.query_wasm_smart(
-        config.token_addr.clone(),
+        x.config.token_addr.clone(),
         &Cw20QueryMsg::TokenInfo{}
     )?;
     amount = amount * Uint128::new((10 as u128).pow(token_info.decimals as u32)); //for decimals
 
     let token_balance: Cw20BalanceResponse = deps.querier.query_wasm_smart(
-        config.token_addr.clone(),
+        x.config.token_addr.clone(),
         &Cw20QueryMsg::Balance{
-            address: info.sender.to_string(),
+            address: _env.contract.address.to_string(),
         }
     )?;
     if token_balance.balance < amount {
@@ -219,7 +164,7 @@ pub fn try_claimpendingtokens(deps: DepsMut, _env: Env, info: MessageInfo)
     }
 
     let bank_cw20 = WasmMsg::Execute {
-        contract_addr: String::from(config.token_addr),
+        contract_addr: String::from(x.config.token_addr),
         msg: to_binary(&Cw20ExecuteMsg::Transfer {
             recipient: info.sender.to_string(),
             amount: amount,
@@ -247,204 +192,133 @@ pub fn check_add_userinfo( users: &mut Vec<UserInfo>, wallet:Addr, amount: Uint1
         users[index.unwrap()].total_amount += amount;
     }
 }
-pub fn try_addseeduser(deps: DepsMut, info: MessageInfo, wallet:Addr, amount: Uint128)
+pub fn try_addseeduser(deps: DepsMut, info: MessageInfo, project_id:u32, wallet:Addr, amount: Uint128)
     ->Result<Response, ContractError>
 {
-    //-----------check owner--------------------------
-    let config = CONFIG.load(deps.storage).unwrap();
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized{});
+    let mut x = PROJECT_INFOS.load(deps.storage, project_id)?;
+    if x.config.owner != info.sender {
+        return Err(ContractError::Unauthorized{ });
     }
 
-    let mut users = SEED_USERS.load(deps.storage).unwrap();
-    check_add_userinfo(&mut users, wallet, amount);
-    SEED_USERS.save(deps.storage, &users)?;
+    check_add_userinfo(&mut x.seed_users, wallet, amount);
+    PROJECT_INFOS.save(deps.storage, project_id, &x)?;
 
     Ok(Response::new()
     .add_attribute("action", "Add  User info for Seed stage"))
 }
-pub fn try_addpresaleuser(deps: DepsMut, info: MessageInfo, wallet: Addr, amount:Uint128)
+pub fn try_addpresaleuser(deps: DepsMut, info: MessageInfo, project_id:u32, wallet: Addr, amount:Uint128)
     ->Result<Response, ContractError>
 {
-    //-----------check owner--------------------------
-    let config = CONFIG.load(deps.storage).unwrap();
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized{});
+    let mut x = PROJECT_INFOS.load(deps.storage, project_id)?;
+    if x.config.owner != info.sender {
+        return Err(ContractError::Unauthorized{ });
     }
 
-    let mut users = SEED_USERS.load(deps.storage).unwrap();
-    check_add_userinfo(&mut users, wallet, amount);
-    PRESALE_USERS.save(deps.storage, &users)?;
+    check_add_userinfo(&mut x.presale_users, wallet, amount);
+    PROJECT_INFOS.save(deps.storage, project_id, &x)?;
 
     Ok(Response::new()
     .add_attribute("action", "Add  User info for Presale stage"))
 }
-pub fn try_addidouser(deps: DepsMut, info: MessageInfo, wallet:Addr, amount:Uint128)
+pub fn try_addidouser(deps: DepsMut, info: MessageInfo, project_id:u32, wallet:Addr, amount:Uint128)
     ->Result<Response, ContractError>
 {
-    //-----------check owner--------------------------
-    let config = CONFIG.load(deps.storage).unwrap();
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized{});
+    let mut x = PROJECT_INFOS.load(deps.storage, project_id)?;
+    if x.config.owner != info.sender {
+        return Err(ContractError::Unauthorized{ });
     }
 
-    let mut users = IDO_USERS.load(deps.storage).unwrap();
-    check_add_userinfo(&mut users, wallet, amount);
-    IDO_USERS.save(deps.storage, &users)?;
+    check_add_userinfo(&mut x.ido_users, wallet, amount);
+    PROJECT_INFOS.save(deps.storage, project_id, &x)?;
 
     Ok(Response::new()
     .add_attribute("action", "Add  User info for IDO stage"))
 }
-pub fn try_setseedusers(deps: DepsMut, info: MessageInfo, user_infos: Vec<UserInfo>)
+pub fn try_setseedusers(deps: DepsMut, info: MessageInfo, project_id:u32, user_infos: Vec<UserInfo>)
     ->Result<Response, ContractError>
 {
-    //-----------check owner--------------------------
-    let config = CONFIG.load(deps.storage).unwrap();
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized{});
+    let mut x = PROJECT_INFOS.load(deps.storage, project_id)?;
+    if x.config.owner != info.sender {
+        return Err(ContractError::Unauthorized{ });
     }
 
-    SEED_USERS.save(deps.storage, &user_infos)?;
+    x.seed_users = user_infos;
+
+    PROJECT_INFOS.save(deps.storage, project_id, &x)?;
 
     Ok(Response::new()
     .add_attribute("action", "Set User infos for Seed stage"))
 }
-pub fn try_setpresaleusers(deps: DepsMut, info: MessageInfo, user_infos: Vec<UserInfo>)
+pub fn try_setpresaleusers(deps: DepsMut, info: MessageInfo, project_id:u32, user_infos: Vec<UserInfo>)
     ->Result<Response, ContractError>
 {
-    //-----------check owner--------------------------
-    let config = CONFIG.load(deps.storage).unwrap();
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized{});
+    let mut x = PROJECT_INFOS.load(deps.storage, project_id)?;
+    if x.config.owner != info.sender {
+        return Err(ContractError::Unauthorized{ });
     }
 
-    PRESALE_USERS.save(deps.storage, &user_infos)?;
+    x.presale_users = user_infos;
+
+    PROJECT_INFOS.save(deps.storage, project_id, &x)?;
 
     Ok(Response::new()
     .add_attribute("action", "Set User infos for Presale stage"))
 }
-pub fn try_setidousers(deps: DepsMut, info: MessageInfo, user_infos: Vec<UserInfo>)
+pub fn try_setidousers(deps: DepsMut, info: MessageInfo, project_id:u32, user_infos: Vec<UserInfo>)
     ->Result<Response, ContractError>
 {
-    //-----------check owner--------------------------
-    let config = CONFIG.load(deps.storage).unwrap();
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized{});
+    let mut x = PROJECT_INFOS.load(deps.storage, project_id)?;
+    if x.config.owner != info.sender {
+        return Err(ContractError::Unauthorized{ });
     }
 
-    IDO_USERS.save(deps.storage, &user_infos)?;
+    x.ido_users = user_infos;
+
+    PROJECT_INFOS.save(deps.storage, project_id, &x)?;
 
     Ok(Response::new()
     .add_attribute("action", "Set User infos for IDO stage"))
 }
 pub fn try_setconfig(deps:DepsMut, info:MessageInfo,
-    admin:Option<String>, 
-    token_addr:Option<String>,
-    start_block: Option<Uint128>
+    project_id: u32,
+    admin:String, 
+    token_addr:String,
+    start_block: Uint128
 ) -> Result<Response, ContractError>
 {
     //-----------check owner--------------------------
-    let config = CONFIG.load(deps.storage).unwrap();
-    if info.sender != config.owner {
+    let owner = OWNER.load(deps.storage).unwrap();
+    if info.sender != owner {
         return Err(ContractError::Unauthorized{});
     }
     
-    let mut config = CONFIG.load(deps.storage).unwrap();
+    let mut x = PROJECT_INFOS.load(deps.storage, project_id)?;
 
-    config.owner =  admin
-    .and_then(|s| deps.api.addr_validate(s.as_str()).ok()) 
-    .unwrap_or(config.owner);
+    x.config.owner =  deps.api.addr_validate(admin.as_str())?;
+    x.config.token_addr = deps.api.addr_validate(token_addr.as_str())?;
+    x.config.start_time = start_block;
 
-    config.token_addr = token_addr
-        .and_then(|s| deps.api.addr_validate(s.as_str()).ok()) 
-        .unwrap_or(config.token_addr);
+    let sec_per_month = 60 * 60 * 24 * 30;
+    let seed_param = VestingParameter {
+        soon: Uint128::new(15), //15% unlock at tge
+        after: Uint128::new(sec_per_month), //after 1 month
+        period: Uint128::new(sec_per_month * 6) //release over 6 month
+    };
+    let presale_param = VestingParameter {
+        soon: Uint128::new(20), //20% unlock at tge
+        after: Uint128::new(sec_per_month), //ater 1 month
+        period: Uint128::new(sec_per_month * 5) //release over 5 month
+    };
+    let ido_param = VestingParameter {
+        soon: Uint128::new(25), //25% unlock at tge
+        after: Uint128::new(sec_per_month), //after 1 month
+        period: Uint128::new(sec_per_month * 4) //release over 4 month
+    };
 
-    config.start_time = start_block
-        .unwrap_or(config.start_time);
-
-    CONFIG.save(deps.storage, &config)?;
+    let mut deps = deps;
+    try_setvestingparameters(deps.branch(), info, project_id, vec![seed_param, presale_param, ido_param])?;
+    PROJECT_INFOS.save(deps.storage, project_id, &x)?;
 
     Ok(Response::new()
         .add_attribute("action", "SetConfig"))                                
-}
-
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::GetBalance{ wallet } => to_binary(&query_balance(deps, _env, wallet)?),
-        QueryMsg::GetConfig{ } => to_binary(&query_getconfig(deps)?),
-        QueryMsg::GetSeedUsers{ } => to_binary(&query_seedusers(deps)?),
-        QueryMsg::GetPresaleUsers{ } => to_binary(&query_presaleusers(deps)?),
-        QueryMsg::GetPendingTokens{ wallet } => to_binary(&query_pendingtokens(deps, _env, wallet)?),
-        QueryMsg::GetIDOUsers{ } => to_binary(&query_idousers(deps)?),
-    }
-}
-fn query_pendingtokens(deps:Deps, _env:Env, wallet: String) -> StdResult<Uint128> {
-    let mut users = SEED_USERS.load(deps.storage).unwrap();
-    let mut index =users.iter().position(|x| x.wallet_address == wallet);
-    let mut amount = Uint128::zero();
-    if index != None {
-        let pending_amount = calc_pending(
-            deps.storage, _env.clone(), users[index.unwrap()].clone(), "seed".to_string()
-        );
-        amount += pending_amount;
-    }
-
-    users = PRESALE_USERS.load(deps.storage).unwrap();
-    index =users.iter().position(|x| x.wallet_address == wallet);
-    if index != None {
-        let pending_amount = calc_pending(
-            deps.storage, _env.clone(), users[index.unwrap()].clone(), "presale".to_string()
-        );
-        amount += pending_amount;
-    }
-
-    users = IDO_USERS.load(deps.storage).unwrap();
-    index =users.iter().position(|x| x.wallet_address == wallet);
-    if index != None {
-        let pending_amount = calc_pending(
-            deps.storage, _env.clone(), users[index.unwrap()].clone(), "ido".to_string()
-        );
-        amount += pending_amount;
-    }
-
-    Ok(amount)
-}
-fn query_seedusers(deps:Deps) -> StdResult<Vec<UserInfo>>{
-    let users = SEED_USERS.load(deps.storage).unwrap();
-    Ok(users)
-}
-fn query_presaleusers(deps:Deps) -> StdResult<Vec<UserInfo>>{
-    let users = PRESALE_USERS.load(deps.storage).unwrap();
-    Ok(users)
-}
-fn query_idousers(deps:Deps) -> StdResult<Vec<UserInfo>>{
-    let users = IDO_USERS.load(deps.storage).unwrap();
-    Ok(users)
-}
-fn query_balance(deps:Deps, _env:Env, wallet:String) -> StdResult<AllBalanceResponse>{
-
-    // let uusd_denom = String::from("uusd");
-    let mut balance: AllBalanceResponse = deps.querier.query(
-        &QueryRequest::Bank(BankQuery::AllBalances {
-            address: wallet.clone(),
-        }
-    ))?;
-
-    let config = CONFIG.load(deps.storage).unwrap();
-
-    let token_balance: Cw20BalanceResponse = deps.querier.query_wasm_smart(
-        config.token_addr,
-        &Cw20QueryMsg::Balance{
-            address: wallet,
-        }
-    )?;
-    balance.amount.push(Coin::new(token_balance.balance.u128(), config.token_name));
-
-    Ok(balance)
-}
-fn query_getconfig(deps:Deps) -> StdResult<Config> {
-    let config = CONFIG.load(deps.storage).unwrap();
-    Ok(config)
 }

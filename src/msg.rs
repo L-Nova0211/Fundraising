@@ -6,54 +6,59 @@ use crate::state::{UserInfo, VestingParameter};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub admin: Option<String>,
-    pub token_addr: Option<String>,
-    pub start_time: Option<Uint128>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     SetConfig { 
-        admin:Option<String>, 
-        token_addr:Option<String>, 
-        start_block: Option<Uint128> 
+        project_id: u32,
+        admin:String, 
+        token_addr:String, 
+        start_block: Uint128 
     },
     SetVestingParameters{
+        project_id: u32,
         params: Vec<VestingParameter>
     },
     SetSeedUsers {
+        project_id: u32,
         user_infos: Vec<UserInfo>
     },
     AddSeedUser {
+        project_id: u32,
         wallet: Addr,
         amount: Uint128
     },
     SetPresaleUsers {
+        project_id: u32,
         user_infos: Vec<UserInfo>
     },
     AddPresaleUser {
+        project_id: u32,
         wallet: Addr,
         amount: Uint128
     },
     SetIDOUsers {
+        project_id: u32,
         user_infos: Vec<UserInfo>
     },
     AddIDOUser {
+        project_id: u32,
         wallet: Addr,
         amount: Uint128
     },
     ClaimPendingTokens{
+        project_id: u32
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    GetConfig{},
-    GetSeedUsers{},
-    GetPresaleUsers{},
-    GetIDOUsers{},
-    GetPendingTokens{ wallet:String },
-    GetBalance{ wallet:String },
+    GetConfig{ project_id: u32 },
+    GetProjectInfo{ project_id: u32 },
+    GetPendingTokens{ project_id:u32, wallet: String },
+    GetBalance{ project_id:u32, wallet: String },
 }
 
