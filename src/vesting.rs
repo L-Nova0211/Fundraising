@@ -1,7 +1,7 @@
 use cosmwasm_std::{Uint128, Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::state::{UserInfo, VestingParameter};
+use crate::state::{UserInfo, VestingParameter, ProjectInfo};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -12,18 +12,19 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     AddProject {
+        admin:String, 
+        token_addr:String, 
+        start_time: Uint128 
+    },
+    SetProjectInfo{
         project_id: u32,
-        admin: String, 
-        token_addr: Option<String>,
-        vesting_addr: Option<String>,
-        start_time: Option<Uint128>,
+        project_info: ProjectInfo
     },
     SetConfig { 
         project_id: u32,
-        admin: Option<String>, 
-        token_addr: Option<String>,
-        vesting_addr: Option<String>,
-        start_time: Option<Uint128> 
+        admin:String, 
+        token_addr:String, 
+        start_time: Uint128 
     },
     SetVestingParameters{
         project_id: u32,
@@ -56,7 +57,7 @@ pub enum ExecuteMsg {
         wallet: Addr,
         amount: Uint128
     },
-    StartVesting {
+    ClaimPendingTokens{
         project_id: u32
     }
 }
@@ -66,7 +67,7 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     GetConfig{ project_id: u32 },
     GetProjectInfo{ project_id: u32 },
-    GetAllProjectInfo { },
+    GetPendingTokens{ project_id:u32, wallet: String },
     GetBalance{ project_id:u32, wallet: String },
 }
 

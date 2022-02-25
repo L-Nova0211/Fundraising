@@ -8,18 +8,14 @@ use cw_storage_plus::{Item, Map};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub owner: Addr,
-	pub project_id: Uint128,
-    pub token_addr: Addr,
-	pub token_name: String,
-    pub token_decimal: Uint128,
+    pub token_addr: String,
+	pub vesting_addr: String,
 	pub start_time: Uint128,
-	pub is_started: bool,
 }
-
 
 //------------Vesting parameter---------------------------------------
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Copy)]
-pub struct VestingParameter{																																																																																																																																																																																																																																																																																																			
+pub struct VestingParameter{
 	pub soon: Uint128,
 	pub after: Uint128,
 	pub period: Uint128
@@ -52,17 +48,4 @@ pub struct ProjectInfo{
 
 pub const OWNER: Item<Addr> = Item::new("owner");
 
-pub const PROJECT_SEQ: Item<u32> = Item::new("prj_seq");
 pub const PROJECT_INFOS:Map<u32, ProjectInfo> = Map::new("project_infos");
-
-pub fn save_projectinfo(deps: DepsMut, _prj: &mut ProjectInfo) 
-    -> StdResult<()> 
-{
-    // increment id if exists, or return 1
-    let id = PROJECT_SEQ.load(deps.storage)?;
-    let id = id + 1;
-    PROJECT_SEQ.save(deps.storage, &id)?;
-
-    _prj.project_id = id;
-    PROJECT_INFOS.save(deps.storage, id, &_prj)
-}

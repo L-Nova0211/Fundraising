@@ -23,7 +23,16 @@ pub enum ContractError {
         epoch_exchange_rate: String,
         withdraw_amount: String,
         release_amount: String
-    }
+    },
     // Add any other custom errors you like here.
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
+
+    #[error("Not set Token addr")]
+    NotTokenAddr {},
+
+    #[error("Not set vesting contract addr")]
+    NotSetVestAddr {},
+
+    #[error("Not set start time")]
+    NotSetStartTime {},
 }
