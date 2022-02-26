@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use cosmwasm_std::{Addr, Uint128, Coin, StdResult, DepsMut};
-use cw_storage_plus::{Item, Map};
+use cw_storage_plus::{Item, Map, U128Key};
 
 //------------Config---------------------------------------
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -38,7 +38,7 @@ pub struct UserInfo{
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ProjectInfo{
-	pub project_id: u32,
+	pub project_id: Uint128,
 	pub config: Config,
 	pub vest_param: HashMap<String, VestingParameter>,
 	pub seed_users: Vec<UserInfo>,
@@ -48,4 +48,4 @@ pub struct ProjectInfo{
 
 pub const OWNER: Item<Addr> = Item::new("owner");
 
-pub const PROJECT_INFOS:Map<u32, ProjectInfo> = Map::new("project_infos");
+pub const PROJECT_INFOS:Map<U128Key, ProjectInfo> = Map::new("project_infos");

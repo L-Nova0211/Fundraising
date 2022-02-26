@@ -27,6 +27,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&query_getallprojectinfo(deps)?),
     }
 }
+
 fn query_getallprojectinfo(deps: Deps) -> StdResult<Vec<ProjectInfo>>
 {
     let all: StdResult<Vec<_>> = PROJECT_INFOS.range(deps.storage, None, None, 
@@ -39,13 +40,14 @@ fn query_getallprojectinfo(deps: Deps) -> StdResult<Vec<ProjectInfo>>
     }
     Ok(all_project)
 }
-fn query_getprojectinfo(deps:Deps, project_id:u32) -> StdResult<ProjectInfo>
+
+fn query_getprojectinfo(deps:Deps, project_id: Uint128) -> StdResult<ProjectInfo>
 {
-    let x = PROJECT_INFOS.load(deps.storage, project_id)?;
+    let x = PROJECT_INFOS.load(deps.storage, project_id.u128().into())?;
     Ok(x)
 }
 
-fn query_balance(deps:Deps, _env:Env, project_id:u32, wallet:String) -> StdResult<AllBalanceResponse>{
+fn query_balance(deps:Deps, _env:Env, project_id: Uint128, wallet:String) -> StdResult<AllBalanceResponse>{
 
     // let uusd_denom = String::from("uusd");
     let mut balance: AllBalanceResponse = deps.querier.query(
@@ -54,7 +56,7 @@ fn query_balance(deps:Deps, _env:Env, project_id:u32, wallet:String) -> StdResul
         }
     ))?;
 
-    let x = PROJECT_INFOS.load(deps.storage, project_id)?;
+    let x = PROJECT_INFOS.load(deps.storage, project_id.u128().into())?;
 
     let token_balance: Cw20BalanceResponse = deps.querier.query_wasm_smart(
         x.clone().config.token_addr,
@@ -70,7 +72,7 @@ fn query_balance(deps:Deps, _env:Env, project_id:u32, wallet:String) -> StdResul
 
     Ok(balance)
 }
-fn query_getconfig(deps:Deps, project_id:u32) -> StdResult<Config> {
-    let x = PROJECT_INFOS.load(deps.storage, project_id)?;
+fn query_getconfig(deps:Deps, project_id: Uint128) -> StdResult<Config> {
+    let x = PROJECT_INFOS.load(deps.storage, project_id.u128().into())?;
     Ok(x.config)
 }

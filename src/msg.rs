@@ -12,61 +12,61 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     AddProject {
-        project_id: u32,
+        project_id: Uint128,
         admin: String, 
         token_addr: Option<String>,
         vesting_addr: Option<String>,
         start_time: Option<Uint128>,
     },
     SetConfig { 
-        project_id: u32,
+        project_id: Uint128,
         admin: Option<String>, 
         token_addr: Option<String>,
         vesting_addr: Option<String>,
         start_time: Option<Uint128> 
     },
     SetVestingParameters{
-        project_id: u32,
+        project_id: Uint128,
         params: Vec<VestingParameter>
     },
     SetSeedUsers {
-        project_id: u32,
+        project_id: Uint128,
         user_infos: Vec<UserInfo>
     },
     AddSeedUser {
-        project_id: u32,
+        project_id: Uint128,
         wallet: Addr,
         amount: Uint128
     },
     SetPresaleUsers {
-        project_id: u32,
+        project_id: Uint128,
         user_infos: Vec<UserInfo>
     },
     AddPresaleUser {
-        project_id: u32,
+        project_id: Uint128,
         wallet: Addr,
         amount: Uint128
     },
     SetIDOUsers {
-        project_id: u32,
+        project_id: Uint128,
         user_infos: Vec<UserInfo>
     },
     AddIDOUser {
-        project_id: u32,
+        project_id: Uint128,
         wallet: Addr,
         amount: Uint128
     },
     StartVesting {
-        project_id: u32
+        project_id: Uint128
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    GetConfig{ project_id: u32 },
-    GetProjectInfo{ project_id: u32 },
+    GetConfig{ project_id: Uint128 },
+    GetProjectInfo{ project_id: Uint128 },
     GetAllProjectInfo { },
-    GetBalance{ project_id:u32, wallet: String },
+    GetBalance{ project_id: Uint128, wallet: String },
 }
 
