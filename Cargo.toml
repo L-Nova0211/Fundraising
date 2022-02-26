@@ -1,5 +1,5 @@
 [package]
-name = "Fundrasing"
+name = "Fundraising"
 version = "0.0.1"
 authors = ["Alenzer <alenzer@users.noreply.github.com>"]
 edition = "2018"
