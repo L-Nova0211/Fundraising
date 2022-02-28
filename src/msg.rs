@@ -1,7 +1,7 @@
 use cosmwasm_std::{Uint128, Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::state::{UserInfo, VestingParameter};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -14,7 +14,7 @@ pub enum ExecuteMsg {
     AddProject {
         project_id: Uint128,
         admin: String, 
-        token_addr: Option<String>,
+        token_addr: String,
         vesting_addr: Option<String>,
         start_time: Option<Uint128>,
     },
@@ -24,6 +24,12 @@ pub enum ExecuteMsg {
         token_addr: Option<String>,
         vesting_addr: Option<String>,
         start_time: Option<Uint128> 
+    },
+    AddUser {
+        project_id: Uint128,
+        wallet: Addr,
+        stage: String,
+        amount: Uint128,
     },
     SetVestingParameters{
         project_id: Uint128,
@@ -70,3 +76,38 @@ pub enum QueryMsg {
     GetBalance{ project_id: Uint128, wallet: String },
 }
 
+//------------Config---------------------------------------
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Config {
+    pub owner: Addr,
+    pub token_addr: String,
+	pub vesting_addr: String,
+	pub start_time: Uint128,
+}
+
+//------------Vesting parameter---------------------------------------
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Copy)]
+pub struct VestingParameter{
+	pub soon: Uint128,
+	pub after: Uint128,
+	pub period: Uint128
+}
+
+//-------------Token holder-------------------------------------------
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct UserInfo{
+	pub wallet_address: Addr, //investor wallet address
+	pub total_amount: Uint128, //WFD token total amount that the investor buys.
+	pub released_amount: Uint128, //released WFD token amount of totalAmount
+	pub pending_amount: Uint128, //token amount that investor can claim 
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ProjectInfo{
+	pub project_id: Uint128,
+	pub config: Config,
+	pub vest_param: HashMap<String, VestingParameter>,
+	pub seed_users: Vec<UserInfo>,
+	pub presale_users: Vec<UserInfo>,
+	pub ido_users: Vec<UserInfo>,
+}

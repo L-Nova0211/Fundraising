@@ -10,8 +10,8 @@ use cw2::set_contract_version;
 use cw20::{Cw20ExecuteMsg, Cw20QueryMsg, BalanceResponse as Cw20BalanceResponse, TokenInfoResponse};
 
 use crate::error::ContractError;
-use crate::msg::{ ExecuteMsg, InstantiateMsg };
-use crate::state::{ ProjectInfo, UserInfo, VestingParameter, PROJECT_INFOS, OWNER, Config };
+use crate::msg::{ ExecuteMsg, InstantiateMsg, ProjectInfo, UserInfo, VestingParameter, Config};
+use crate::state::{PROJECT_INFOS, OWNER };
 use crate::vesting::{ ExecuteMsg as vestingExecuteMsg };
 
 // version info for migration info
@@ -51,6 +51,9 @@ pub fn execute(
         ExecuteMsg::SetConfig{ project_id, admin, token_addr, vesting_addr, start_time} 
             => try_setconfig(deps, info, project_id, admin, token_addr, vesting_addr, start_time),
 
+        ExecuteMsg::AddUser{ project_id, wallet, stage, amount} 
+            => try_adduser(deps, info, project_id, wallet, stage, amount),
+
         ExecuteMsg::SetVestingParameters{ project_id, params }
             => try_setvestingparameters(deps, info, project_id, params),
 
@@ -77,10 +80,11 @@ pub fn execute(
 
     }
 }
+
 pub fn try_startvesting(deps: DepsMut, _env:Env, info: MessageInfo, project_id: Uint128)
     ->Result<Response, ContractError>
 {
-    let x: ProjectInfo = PROJECT_INFOS.load(deps.storage, project_id.u128().into())?;
+    let mut x: ProjectInfo = PROJECT_INFOS.load(deps.storage, project_id.u128().into())?;
     let y = x.clone();
     if x.config.token_addr == "".to_string() {
         return Err(ContractError::NotTokenAddr { });
@@ -89,7 +93,7 @@ pub fn try_startvesting(deps: DepsMut, _env:Env, info: MessageInfo, project_id: 
         return Err(ContractError::NotSetVestAddr { });
     }
     if x.config.start_time == Uint128::zero() {
-        return Err(ContractError::NotSetStartTime { });
+        x.config.start_time = Uint128::from(_env.block.time.seconds());
     }
 
     let mut amount = Uint128::zero();
@@ -149,7 +153,7 @@ pub fn try_setvestingparameters(deps: DepsMut, info: MessageInfo, project_id: Ui
     .add_attribute("action", "Set Vesting parameters"))
 }
 
-pub fn check_add_userinfo( users: &mut Vec<UserInfo>, wallet:Addr, amount: Uint128)
+pub fn check_add_userinfo( users: &mut Vec<UserInfo>, wallet: Addr, amount: Uint128)
 {
     let index =users.iter().position(|x| x.wallet_address == wallet);
     if index == None {
@@ -257,6 +261,28 @@ pub fn try_setidousers(deps: DepsMut, info: MessageInfo, project_id: Uint128, us
     Ok(Response::new()
     .add_attribute("action", "Set User infos for IDO stage"))
 }
+pub fn try_adduser(deps: DepsMut, info: MessageInfo, project_id: Uint128, wallet: Addr, stage: String, amount: Uint128)
+    ->Result<Response, ContractError>
+{
+    let owner = OWNER.load(deps.storage).unwrap();
+    let x = PROJECT_INFOS.load(deps.storage, project_id.u128().into())?;
+    if info.sender != owner && info.sender != x.config.owner {
+        return Err(ContractError::Unauthorized{ });
+    }
+    
+    if stage.to_lowercase() == "seed".to_string(){
+        try_addseeduser(deps, info, project_id, wallet, amount)?;
+    }
+    else if stage.to_lowercase() == "presale".to_string(){
+        try_addpresaleuser(deps, info, project_id, wallet, amount)?;
+    }
+    else if stage.to_lowercase() == "ido".to_string(){
+        try_addidouser(deps, info, project_id, wallet, amount)?;
+    }
+
+    Ok(Response::new()
+    .add_attribute("action", "Set User info"))
+}
 
 pub fn try_setconfig(deps:DepsMut, info:MessageInfo,
     project_id: Uint128,
@@ -299,7 +325,7 @@ pub fn try_setconfig(deps:DepsMut, info:MessageInfo,
 pub fn try_addproject(deps:DepsMut, info:MessageInfo,
     project_id: Uint128,
     admin: String, 
-    token_addr: Option<String>,
+    token_addr: String,
     vesting_addr: Option<String>,
     start_time: Option<Uint128>
 ) -> Result<Response, ContractError>
@@ -312,10 +338,7 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
 
     let config: Config = Config{
         owner: deps.api.addr_validate(admin.as_str())?,
-        token_addr: match token_addr{
-            Some(v) => v,
-            None => "".to_string()
-        },
+        token_addr: token_addr,
         vesting_addr: match vesting_addr{
             Some(v) => v,
             None => "".to_string()
@@ -326,7 +349,7 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
         }
     };
 
-    let mut project_info: ProjectInfo = ProjectInfo{
+    let project_info: ProjectInfo = ProjectInfo{
         project_id: project_id,
         config: config,
         vest_param: HashMap::new(),

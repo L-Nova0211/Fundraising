@@ -8,8 +8,8 @@ use cosmwasm_std::{
 
 use cw20::{ Cw20QueryMsg, BalanceResponse as Cw20BalanceResponse, TokenInfoResponse };
 
-use crate::msg::{QueryMsg};
-use crate::state::{Config, PROJECT_INFOS, ProjectInfo};
+use crate::msg::{QueryMsg, Config, ProjectInfo};
+use crate::state::{PROJECT_INFOS};
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {

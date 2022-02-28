@@ -1,7 +1,7 @@
 use cosmwasm_std::{Uint128, Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::state::{UserInfo, VestingParameter, ProjectInfo};
+use crate::msg::{ProjectInfo, VestingParameter, UserInfo};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
