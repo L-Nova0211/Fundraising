@@ -5,11 +5,58 @@
     {
       "type": "object",
       "required": [
+        "add_project"
+      ],
+      "properties": {
+        "add_project": {
+          "type": "object",
+          "required": [
+            "admin",
+            "project_id",
+            "token_addr"
+          ],
+          "properties": {
+            "admin": {
+              "type": "string"
+            },
+            "project_id": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "start_time": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "token_addr": {
+              "type": "string"
+            },
+            "vesting_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "set_config"
       ],
       "properties": {
         "set_config": {
           "type": "object",
+          "required": [
+            "project_id"
+          ],
           "properties": {
             "admin": {
               "type": [
@@ -17,19 +64,26 @@
                 "null"
               ]
             },
-            "anchor_market": {
+            "project_id": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "start_time": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "token_addr": {
               "type": [
                 "string",
                 "null"
               ]
             },
-            "aust_token": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "wefund": {
+            "vesting_addr": {
               "type": [
                 "string",
                 "null"
@@ -43,94 +97,54 @@
     {
       "type": "object",
       "required": [
-        "add_project"
+        "add_user"
       ],
       "properties": {
-        "add_project": {
+        "add_user": {
           "type": "object",
           "required": [
-            "creator_wallet",
-            "project_category",
-            "project_chain",
-            "project_collected",
-            "project_createddate",
-            "project_deadline",
-            "project_description",
-            "project_email",
-            "project_icon",
-            "project_milestones",
-            "project_name",
-            "project_subcategory",
-            "project_teamdescription",
-            "project_website",
-            "project_whitepaper"
+            "amount",
+            "project_id",
+            "stage",
+            "wallet"
           ],
           "properties": {
-            "creator_wallet": {
-              "type": "string"
-            },
-            "project_category": {
-              "type": "string"
-            },
-            "project_chain": {
-              "type": "string"
-            },
-            "project_collected": {
+            "amount": {
               "$ref": "#/definitions/Uint128"
             },
-            "project_createddate": {
+            "project_id": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "stage": {
               "type": "string"
             },
-            "project_deadline": {
-              "type": "string"
-            },
-            "project_description": {
-              "type": "string"
-            },
-            "project_email": {
-              "type": "string"
-            },
-            "project_icon": {
-              "type": "string"
-            },
-            "project_milestones": {
+            "wallet": {
+              "$ref": "#/definitions/Addr"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "set_vesting_parameters"
+      ],
+      "properties": {
+        "set_vesting_parameters": {
+          "type": "object",
+          "required": [
+            "params",
+            "project_id"
+          ],
+          "properties": {
+            "params": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/Milestone"
+                "$ref": "#/definitions/VestingParameter"
               }
             },
-            "project_name": {
-              "type": "string"
-            },
-            "project_subcategory": {
-              "type": "string"
-            },
-            "project_teamdescription": {
-              "type": "string"
-            },
-            "project_website": {
-              "type": "string"
-            },
-            "project_whitepaper": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "remove_project"
-      ],
-      "properties": {
-        "remove_project": {
-          "type": "object",
-          "required": [
-            "project_id"
-          ],
-          "properties": {
             "project_id": {
               "$ref": "#/definitions/Uint128"
             }
@@ -142,173 +156,24 @@
     {
       "type": "object",
       "required": [
-        "back2_project"
+        "set_seed_users"
       ],
       "properties": {
-        "back2_project": {
-          "type": "object",
-          "required": [
-            "backer_wallet",
-            "project_id"
-          ],
-          "properties": {
-            "backer_wallet": {
-              "type": "string"
-            },
-            "project_id": {
-              "$ref": "#/definitions/Uint128"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "complete_project"
-      ],
-      "properties": {
-        "complete_project": {
-          "type": "object",
-          "required": [
-            "project_id"
-          ],
-          "properties": {
-            "project_id": {
-              "$ref": "#/definitions/Uint128"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "fail_project"
-      ],
-      "properties": {
-        "fail_project": {
-          "type": "object",
-          "required": [
-            "project_id"
-          ],
-          "properties": {
-            "project_id": {
-              "$ref": "#/definitions/Uint128"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "transfer_all_coins"
-      ],
-      "properties": {
-        "transfer_all_coins": {
-          "type": "object",
-          "required": [
-            "wallet"
-          ],
-          "properties": {
-            "wallet": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "add_communitymember"
-      ],
-      "properties": {
-        "add_communitymember": {
-          "type": "object",
-          "required": [
-            "wallet"
-          ],
-          "properties": {
-            "wallet": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "remove_communitymember"
-      ],
-      "properties": {
-        "remove_communitymember": {
-          "type": "object",
-          "required": [
-            "wallet"
-          ],
-          "properties": {
-            "wallet": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "wefund_approve"
-      ],
-      "properties": {
-        "wefund_approve": {
-          "type": "object",
-          "required": [
-            "deadline",
-            "project_id"
-          ],
-          "properties": {
-            "deadline": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "project_id": {
-              "$ref": "#/definitions/Uint128"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "set_community_vote"
-      ],
-      "properties": {
-        "set_community_vote": {
+        "set_seed_users": {
           "type": "object",
           "required": [
             "project_id",
-            "voted",
-            "wallet"
+            "user_infos"
           ],
           "properties": {
             "project_id": {
               "$ref": "#/definitions/Uint128"
             },
-            "voted": {
-              "type": "boolean"
-            },
-            "wallet": {
-              "type": "string"
+            "user_infos": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/UserInfo"
+              }
             }
           }
         }
@@ -318,25 +183,52 @@
     {
       "type": "object",
       "required": [
-        "set_milestone_vote"
+        "add_seed_user"
       ],
       "properties": {
-        "set_milestone_vote": {
+        "add_seed_user": {
+          "type": "object",
+          "required": [
+            "amount",
+            "project_id",
+            "wallet"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "project_id": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "wallet": {
+              "$ref": "#/definitions/Addr"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "set_presale_users"
+      ],
+      "properties": {
+        "set_presale_users": {
           "type": "object",
           "required": [
             "project_id",
-            "voted",
-            "wallet"
+            "user_infos"
           ],
           "properties": {
             "project_id": {
               "$ref": "#/definitions/Uint128"
             },
-            "voted": {
-              "type": "boolean"
-            },
-            "wallet": {
-              "type": "string"
+            "user_infos": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/UserInfo"
+              }
             }
           }
         }
@@ -346,40 +238,99 @@
     {
       "type": "object",
       "required": [
-        "release_milestone"
+        "add_presale_user"
       ],
       "properties": {
-        "release_milestone": {
+        "add_presale_user": {
+          "type": "object",
+          "required": [
+            "amount",
+            "project_id",
+            "wallet"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "project_id": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "wallet": {
+              "$ref": "#/definitions/Addr"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "set_i_d_o_users"
+      ],
+      "properties": {
+        "set_i_d_o_users": {
+          "type": "object",
+          "required": [
+            "project_id",
+            "user_infos"
+          ],
+          "properties": {
+            "project_id": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "user_infos": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/UserInfo"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "add_i_d_o_user"
+      ],
+      "properties": {
+        "add_i_d_o_user": {
+          "type": "object",
+          "required": [
+            "amount",
+            "project_id",
+            "wallet"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "project_id": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "wallet": {
+              "$ref": "#/definitions/Addr"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "start_vesting"
+      ],
+      "properties": {
+        "start_vesting": {
           "type": "object",
           "required": [
             "project_id"
           ],
           "properties": {
             "project_id": {
-              "$ref": "#/definitions/Uint128"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "set_project_status"
-      ],
-      "properties": {
-        "set_project_status": {
-          "type": "object",
-          "required": [
-            "project_id",
-            "status"
-          ],
-          "properties": {
-            "project_id": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "status": {
               "$ref": "#/definitions/Uint128"
             }
           }
@@ -393,64 +344,49 @@
       "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
       "type": "string"
     },
-    "Milestone": {
-      "type": "object",
-      "required": [
-        "milestone_amount",
-        "milestone_description",
-        "milestone_enddate",
-        "milestone_name",
-        "milestone_startdate",
-        "milestone_status",
-        "milestone_step",
-        "milestone_votes"
-      ],
-      "properties": {
-        "milestone_amount": {
-          "$ref": "#/definitions/Uint128"
-        },
-        "milestone_description": {
-          "type": "string"
-        },
-        "milestone_enddate": {
-          "type": "string"
-        },
-        "milestone_name": {
-          "type": "string"
-        },
-        "milestone_startdate": {
-          "type": "string"
-        },
-        "milestone_status": {
-          "$ref": "#/definitions/Uint128"
-        },
-        "milestone_step": {
-          "$ref": "#/definitions/Uint128"
-        },
-        "milestone_votes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Vote"
-          }
-        }
-      }
-    },
     "Uint128": {
       "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
       "type": "string"
     },
-    "Vote": {
+    "UserInfo": {
       "type": "object",
       "required": [
-        "voted",
-        "wallet"
+        "pending_amount",
+        "released_amount",
+        "total_amount",
+        "wallet_address"
       ],
       "properties": {
-        "voted": {
-          "type": "boolean"
+        "pending_amount": {
+          "$ref": "#/definitions/Uint128"
         },
-        "wallet": {
+        "released_amount": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "total_amount": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "wallet_address": {
           "$ref": "#/definitions/Addr"
+        }
+      }
+    },
+    "VestingParameter": {
+      "type": "object",
+      "required": [
+        "after",
+        "period",
+        "soon"
+      ],
+      "properties": {
+        "after": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "period": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "soon": {
+          "$ref": "#/definitions/Uint128"
         }
       }
     }

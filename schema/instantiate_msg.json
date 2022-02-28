@@ -8,24 +8,6 @@
         "string",
         "null"
       ]
-    },
-    "anchor_market": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "aust_token": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "wefund": {
-      "type": [
-        "string",
-        "null"
-      ]
     }
   }
 }
