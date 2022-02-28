@@ -45,11 +45,14 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
+        ExecuteMsg::SetConfig{ admin }
+            => try_setconfig(deps, info, admin ),
+
         ExecuteMsg::AddProject{ project_id, admin, token_addr, vesting_addr, start_time }
             => try_addproject(deps, info, project_id, admin, token_addr, vesting_addr,start_time ),
 
-        ExecuteMsg::SetConfig{ project_id, admin, token_addr, vesting_addr, start_time} 
-            => try_setconfig(deps, info, project_id, admin, token_addr, vesting_addr, start_time),
+        ExecuteMsg::SetProjectConfig{ project_id, admin, token_addr, vesting_addr, start_time} 
+            => try_setprojectconfig(deps, info, project_id, admin, token_addr, vesting_addr, start_time),
 
         ExecuteMsg::AddUser{ project_id, wallet, stage, amount} 
             => try_adduser(deps, info, project_id, wallet, stage, amount),
@@ -284,7 +287,7 @@ pub fn try_adduser(deps: DepsMut, info: MessageInfo, project_id: Uint128, wallet
     .add_attribute("action", "Set User info"))
 }
 
-pub fn try_setconfig(deps:DepsMut, info:MessageInfo,
+pub fn try_setprojectconfig(deps:DepsMut, info:MessageInfo,
     project_id: Uint128,
     admin: Option<String>, 
     token_addr: Option<String>,
@@ -361,5 +364,20 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
     PROJECT_INFOS.save(deps.storage, project_id.u128().into(), &project_info)?;
 
     Ok(Response::new()
-        .add_attribute("action", "SetConfig"))                                
+        .add_attribute("action", "SetProjectConfig"))                                
+}
+pub fn try_setconfig(deps:DepsMut, info:MessageInfo, admin: String) 
+    -> Result<Response, ContractError>
+{
+    //-----------check owner--------------------------
+    let owner = OWNER.load(deps.storage).unwrap();
+    if info.sender != owner {
+        return Err(ContractError::Unauthorized{});
+    }
+
+    let admin_addr = deps.api.addr_validate(&admin).unwrap();
+    OWNER.save(deps.storage, &admin_addr)?;
+
+    Ok(Response::new()
+    .add_attribute("action", "SetConfig")) 
 }
