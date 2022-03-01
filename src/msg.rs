@@ -77,6 +77,7 @@ pub enum QueryMsg {
     GetProjectInfo{ project_id: Uint128 },
     GetAllProjectInfo { },
     GetBalance{ project_id: Uint128, wallet: String },
+    GetOwner{ },
 }
 
 //------------Config---------------------------------------

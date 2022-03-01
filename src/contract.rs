@@ -351,6 +351,7 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
             None => Uint128::zero()
         }
     };
+    let _config = config.clone();
 
     let project_info: ProjectInfo = ProjectInfo{
         project_id: project_id,
@@ -362,6 +363,22 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
     };
 
     PROJECT_INFOS.save(deps.storage, project_id.u128().into(), &project_info)?;
+
+    if _config.vesting_addr != "".to_string() {
+        let msg_addproject = WasmMsg::Execute {
+            contract_addr: _config.vesting_addr,
+                msg: to_binary(&vestingExecuteMsg::AddProject {
+                    project_id: project_id,
+                    admin: _config.owner.to_string(), 
+                    token_addr: _config.token_addr, 
+                    start_time: _config.start_time 
+                }).unwrap(),
+            funds: Vec::new()
+        };
+        return Ok(Response::new()
+        .add_message(CosmosMsg::Wasm(msg_addproject))
+        .add_attribute("action", "Start vesting"));
+    }
 
     Ok(Response::new()
         .add_attribute("action", "SetProjectConfig"))                                

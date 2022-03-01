@@ -1,7 +1,7 @@
 use cosmwasm_std::{Uint128, Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::msg::{ProjectInfo, VestingParameter, UserInfo};
+use crate::msg::{UserInfo, VestingParameter, ProjectInfo};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -11,16 +11,20 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    SetConfig {
+        admin: String,
+    },
     AddProject {
-        admin:String, 
-        token_addr:String, 
+        project_id: Uint128,
+        admin: String, 
+        token_addr: String, 
         start_time: Uint128 
     },
     SetProjectInfo{
         project_id: Uint128,
         project_info: ProjectInfo
     },
-    SetConfig { 
+    SetProjectConfig { 
         project_id: Uint128,
         admin:String, 
         token_addr:String, 
@@ -69,6 +73,7 @@ pub enum QueryMsg {
     GetPendingTokens { project_id: Uint128, wallet: String },
     GetBalance { project_id: Uint128, wallet: String },
     GetProjectInfo { project_id: Uint128 },
-    GetAllProjectInfo {}
+    GetAllProjectInfo {},
+    GetOwner{ }
 }
 

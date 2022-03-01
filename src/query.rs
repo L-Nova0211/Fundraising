@@ -9,7 +9,7 @@ use cosmwasm_std::{
 use cw20::{ Cw20QueryMsg, BalanceResponse as Cw20BalanceResponse, TokenInfoResponse };
 
 use crate::msg::{QueryMsg, Config, ProjectInfo};
-use crate::state::{PROJECT_INFOS};
+use crate::state::{PROJECT_INFOS, OWNER};
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
@@ -25,6 +25,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
         QueryMsg::GetAllProjectInfo{ } =>
             to_binary(&query_getallprojectinfo(deps)?),
+
+        QueryMsg::GetOwner{ } => {
+            let owner = OWNER.load(deps.storage).unwrap();
+            to_binary(&owner)
+        }
+            
     }
 }
 
