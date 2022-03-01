@@ -11,10 +11,14 @@
         "set_config": {
           "type": "object",
           "required": [
-            "admin"
+            "admin",
+            "vesting_addr"
           ],
           "properties": {
             "admin": {
+              "type": "string"
+            },
+            "vesting_addr": {
               "type": "string"
             }
           }
@@ -33,7 +37,8 @@
           "required": [
             "admin",
             "project_id",
-            "token_addr"
+            "token_addr",
+            "vesting_params"
           ],
           "properties": {
             "admin": {
@@ -55,11 +60,11 @@
             "token_addr": {
               "type": "string"
             },
-            "vesting_addr": {
-              "type": [
-                "string",
-                "null"
-              ]
+            "vesting_params": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/VestingParameter"
+              }
             }
           }
         }
@@ -98,12 +103,6 @@
               ]
             },
             "token_addr": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "vesting_addr": {
               "type": [
                 "string",
                 "null"
