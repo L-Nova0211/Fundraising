@@ -1,7 +1,6 @@
 use cosmwasm_std::{Uint128, Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -13,19 +12,19 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     SetConfig {
         admin: String,
+        vesting_addr: String,
     },
     AddProject {
         project_id: Uint128,
         admin: String, 
         token_addr: String,
-        vesting_addr: Option<String>,
+        vesting_params: Vec<VestingParameter>,
         start_time: Option<Uint128>,
     },
     SetProjectConfig { 
         project_id: Uint128,
         admin: Option<String>, 
         token_addr: Option<String>,
-        vesting_addr: Option<String>,
         start_time: Option<Uint128> 
     },
     AddUser {
@@ -85,7 +84,6 @@ pub enum QueryMsg {
 pub struct Config {
     pub owner: Addr,
     pub token_addr: String,
-	pub vesting_addr: String,
 	pub start_time: Uint128,
 }
 
@@ -110,7 +108,7 @@ pub struct UserInfo{
 pub struct ProjectInfo{
 	pub project_id: Uint128,
 	pub config: Config,
-	pub vest_param: HashMap<String, VestingParameter>,
+	pub vest_param: Vec<VestingParameter>,
 	pub seed_users: Vec<UserInfo>,
 	pub presale_users: Vec<UserInfo>,
 	pub ido_users: Vec<UserInfo>,

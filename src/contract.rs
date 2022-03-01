@@ -1,17 +1,16 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use std::collections::HashMap;
 
 use cosmwasm_std::{
     Addr, to_binary, DepsMut, Env, MessageInfo, Response,
-    Uint128, CosmosMsg, WasmMsg, Storage
+    Uint128, CosmosMsg, WasmMsg
 };
 use cw2::set_contract_version;
-use cw20::{Cw20ExecuteMsg, Cw20QueryMsg, BalanceResponse as Cw20BalanceResponse, TokenInfoResponse};
+use cw20::{Cw20QueryMsg, BalanceResponse as Cw20BalanceResponse, TokenInfoResponse};
 
 use crate::error::ContractError;
 use crate::msg::{ ExecuteMsg, InstantiateMsg, ProjectInfo, UserInfo, VestingParameter, Config};
-use crate::state::{PROJECT_INFOS, OWNER };
+use crate::state::{PROJECT_INFOS, OWNER, VESTING_ADDR };
 use crate::vesting::{ ExecuteMsg as vestingExecuteMsg };
 
 // version info for migration info
@@ -45,14 +44,14 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::SetConfig{ admin }
-            => try_setconfig(deps, info, admin ),
+        ExecuteMsg::SetConfig{ admin, vesting_addr }
+            => try_setconfig(deps, info, admin, vesting_addr ),
 
-        ExecuteMsg::AddProject{ project_id, admin, token_addr, vesting_addr, start_time }
-            => try_addproject(deps, info, project_id, admin, token_addr, vesting_addr,start_time ),
+        ExecuteMsg::AddProject{ project_id, admin, token_addr, vesting_params, start_time }
+            => try_addproject(deps, info, project_id, admin, token_addr, vesting_params, start_time ),
 
-        ExecuteMsg::SetProjectConfig{ project_id, admin, token_addr, vesting_addr, start_time} 
-            => try_setprojectconfig(deps, info, project_id, admin, token_addr, vesting_addr, start_time),
+        ExecuteMsg::SetProjectConfig{ project_id, admin, token_addr, start_time} 
+            => try_setprojectconfig(deps, info, project_id, admin, token_addr, start_time),
 
         ExecuteMsg::AddUser{ project_id, wallet, stage, amount} 
             => try_adduser(deps, info, project_id, wallet, stage, amount),
@@ -92,7 +91,8 @@ pub fn try_startvesting(deps: DepsMut, _env:Env, info: MessageInfo, project_id: 
     if x.config.token_addr == "".to_string() {
         return Err(ContractError::NotTokenAddr { });
     }
-    if x.config.vesting_addr == "".to_string() {
+    let vesting_addr = VESTING_ADDR.load(deps.storage)?;
+    if vesting_addr == "".to_string() {
         return Err(ContractError::NotSetVestAddr { });
     }
     if x.config.start_time == Uint128::zero() {
@@ -127,7 +127,7 @@ pub fn try_startvesting(deps: DepsMut, _env:Env, info: MessageInfo, project_id: 
     }
 
     let msg_vesting = WasmMsg::Execute {
-            contract_addr: x.config.vesting_addr,
+            contract_addr: vesting_addr.to_string(),
             msg: to_binary(&vestingExecuteMsg::SetProjectInfo {
                 project_id: project_id,
                 project_info: y
@@ -147,9 +147,7 @@ pub fn try_setvestingparameters(deps: DepsMut, info: MessageInfo, project_id: Ui
         return Err(ContractError::Unauthorized{ });
     }
 
-    x.vest_param.insert("seed".to_string(), params[0]);
-    x.vest_param.insert("presale".to_string(), params[1]);
-    x.vest_param.insert("ido".to_string(), params[2]);
+    x.vest_param = params;
 
     PROJECT_INFOS.save(deps.storage, project_id.u128().into(), &x)?;
     Ok(Response::new()
@@ -291,7 +289,6 @@ pub fn try_setprojectconfig(deps:DepsMut, info:MessageInfo,
     project_id: Uint128,
     admin: Option<String>, 
     token_addr: Option<String>,
-    vesting_addr: Option<String>,
     start_time: Option<Uint128>
 ) -> Result<Response, ContractError>
 {
@@ -310,11 +307,6 @@ pub fn try_setprojectconfig(deps:DepsMut, info:MessageInfo,
             None => x.config.token_addr
         };
 
-    x.config.vesting_addr = match vesting_addr{
-            Some(v) => v,
-            None => x.config.vesting_addr
-        };
-
     x.config.start_time = match start_time {
             Some(v) => v,
             None => x.config.start_time
@@ -329,7 +321,7 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
     project_id: Uint128,
     admin: String, 
     token_addr: String,
-    vesting_addr: Option<String>,
+    vesting_params: Vec<VestingParameter>,
     start_time: Option<Uint128>
 ) -> Result<Response, ContractError>
 {
@@ -342,10 +334,6 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
     let config: Config = Config{
         owner: deps.api.addr_validate(admin.as_str())?,
         token_addr: token_addr,
-        vesting_addr: match vesting_addr{
-            Some(v) => v,
-            None => "".to_string()
-        },
         start_time : match start_time{
             Some(v) => v,
             None => Uint128::zero()
@@ -356,7 +344,7 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
     let project_info: ProjectInfo = ProjectInfo{
         project_id: project_id,
         config: config,
-        vest_param: HashMap::new(),
+        vest_param: vesting_params,
         seed_users: Vec::new(),
         presale_users: Vec::new(),
         ido_users: Vec::new()
@@ -364,9 +352,10 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
 
     PROJECT_INFOS.save(deps.storage, project_id.u128().into(), &project_info)?;
 
-    if _config.vesting_addr != "".to_string() {
+    let vesting_addr = VESTING_ADDR.load(deps.storage)?;
+    if vesting_addr != "".to_string() {
         let msg_addproject = WasmMsg::Execute {
-            contract_addr: _config.vesting_addr,
+            contract_addr: vesting_addr.to_string(),
                 msg: to_binary(&vestingExecuteMsg::AddProject {
                     project_id: project_id,
                     admin: _config.owner.to_string(), 
@@ -381,9 +370,9 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
     }
 
     Ok(Response::new()
-        .add_attribute("action", "SetProjectConfig"))                                
+        .add_attribute("action", "Add Project"))                                
 }
-pub fn try_setconfig(deps:DepsMut, info:MessageInfo, admin: String) 
+pub fn try_setconfig(deps:DepsMut, info:MessageInfo, admin: String, vesting_addr: String) 
     -> Result<Response, ContractError>
 {
     //-----------check owner--------------------------
@@ -394,6 +383,9 @@ pub fn try_setconfig(deps:DepsMut, info:MessageInfo, admin: String)
 
     let admin_addr = deps.api.addr_validate(&admin).unwrap();
     OWNER.save(deps.storage, &admin_addr)?;
+
+    let vesting_contract_address = deps.api.addr_validate(&vesting_addr).unwrap();
+    VESTING_ADDR.save(deps.storage, &vesting_contract_address);
 
     Ok(Response::new()
     .add_attribute("action", "SetConfig")) 
