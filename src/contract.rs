@@ -45,7 +45,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::SetConfig{ admin, vesting_addr }
-            => try_setconfig(deps, info, admin, vesting_addr ),
+            => try_setconfig(deps, _env, info, admin, vesting_addr ),
 
         ExecuteMsg::AddProject{ project_id, admin, token_addr, vesting_params, start_time }
             => try_addproject(deps, info, project_id, admin, token_addr, vesting_params, start_time ),
@@ -109,22 +109,22 @@ pub fn try_startvesting(deps: DepsMut, _env:Env, info: MessageInfo, project_id: 
     for user in x.ido_users{
         amount += user.total_amount;
     }
-    let token_addr = deps.api.addr_validate(x.config.token_addr.as_str())?;
-    let token_info: TokenInfoResponse = deps.querier.query_wasm_smart(
-        token_addr.clone(),
-        &Cw20QueryMsg::TokenInfo{ }
-    )?;
+    // let token_addr = deps.api.addr_validate(x.config.token_addr.as_str())?;
+    // let token_info: TokenInfoResponse = deps.querier.query_wasm_smart(
+    //     token_addr.clone(),
+    //     &Cw20QueryMsg::TokenInfo{ }
+    // )?;
 
-    amount = amount * Uint128::from((10u32).pow(token_info.decimals as u32));
-    let token_balance: Cw20BalanceResponse = deps.querier.query_wasm_smart(
-        token_addr,
-        &Cw20QueryMsg::Balance{
-            address: _env.contract.address.to_string(),
-        }
-    )?;
-    if token_balance.balance < amount {
-        return Err(ContractError::NotEnoughBalance { })
-    }
+    // amount = amount * Uint128::from((10u32).pow(token_info.decimals as u32));
+    // let token_balance: Cw20BalanceResponse = deps.querier.query_wasm_smart(
+    //     token_addr,
+    //     &Cw20QueryMsg::Balance{
+    //         address: _env.contract.address.to_string(),
+    //     }
+    // )?;
+    // if token_balance.balance < amount {
+    //     return Err(ContractError::NotEnoughBalance { })
+    // }
 
     let msg_vesting = WasmMsg::Execute {
             contract_addr: vesting_addr.to_string(),
@@ -372,21 +372,34 @@ pub fn try_addproject(deps:DepsMut, info:MessageInfo,
     Ok(Response::new()
         .add_attribute("action", "Add Project"))                                
 }
-pub fn try_setconfig(deps:DepsMut, info:MessageInfo, admin: String, vesting_addr: String) 
+pub fn try_setconfig(deps:DepsMut, env:Env, info:MessageInfo, admin: String, vesting_addr: String) 
     -> Result<Response, ContractError>
 {
     //-----------check owner--------------------------
-    let owner = OWNER.load(deps.storage).unwrap();
-    if info.sender != owner {
-        return Err(ContractError::Unauthorized{});
-    }
+    // let owner = OWNER.load(deps.storage).unwrap();
+    // if info.sender != owner {
+    //     return Err(ContractError::Unauthorized{});
+    // }
 
     let admin_addr = deps.api.addr_validate(&admin).unwrap();
     OWNER.save(deps.storage, &admin_addr)?;
 
     let vesting_contract_address = deps.api.addr_validate(&vesting_addr).unwrap();
-    VESTING_ADDR.save(deps.storage, &vesting_contract_address);
+    VESTING_ADDR.save(deps.storage, &vesting_contract_address)?;
+
+    // let set_vesting_config = WasmMsg::Execute {
+    //     contract_addr: vesting_contract_address.to_string(),
+    //     msg: to_binary(
+    //         &vestingExecuteMsg::SetConfig {
+    //             admin: env.contract.address.to_string(),
+    //         }
+    //     ).unwrap(),
+    //     funds: vec![]
+    // };
 
     Ok(Response::new()
+    // .add_messages(vec![
+    //     CosmosMsg::Wasm(set_vesting_config)
+    // ])
     .add_attribute("action", "SetConfig")) 
 }
